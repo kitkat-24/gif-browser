@@ -1,6 +1,12 @@
+# Nimble files
 nimble.paths
 config.nims
-src/gifbrowser
 nimble.develop
 nimbledeps
+
+# Executable
+gifbrowser
+!src/gifbrowser
+
+# Other
 path.txt
