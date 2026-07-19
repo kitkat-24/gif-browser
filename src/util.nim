@@ -1,34 +1,46 @@
-import pixie, pixie/fileformats/gif
+import pixie/fileformats/gif
 import raylib
+import std/[assertions, os, strformat, strutils]
 
 type GifAnimation* = object
   textures*: seq[Texture2D]
   delays*: seq[float32] # Storing variable frame timings securely
+  width*: int32
+  height*: int32
 
 proc loadGifAnimation*(path: string): GifAnimation =
+  # Have to read GIF with Pixie just to get frame delays bc raylib discard them :/
   let rawGif = decodeGif(readFile(path))
   
-  for i, frame in rawGif.frames:
-    result.delays.add(rawGif.intervals[i])
-    
-    # 1. Allocate a fresh, native image container inside Raylib's memory pool.
-    # Passing 'nil' for the data field forces Raylib to cleanly allocate its own 
-    # internal uninitialized heap space matching the dimensions.
-    var raylibOwnedImg = genImageColor(
-      frame.width.int32, 
-      frame.height.int32, 
-      Blank
-    )
-    
-    # 2. Access the memory destination and source pointers safely
-    let destData = cast[ptr UncheckedArray[ColorRGBA]](raylibOwnedImg.data)
-    let srcData = cast[ptr UncheckedArray[ColorRGBX]](addr frame.data[0])
-    
-    let totalPixels = frame.width * frame.height
-    
-    # 3. Step through the buffer pixel by pixel and convert the alpha layout
-    for i in 0 ..< totalPixels:
-      # autoStraightAlpha handles the conversion from Pixie's RGBX to Raylib's RGBA
-      destData[i] = autoStraightAlpha(srcData[i])
+  # Loads full give data into one image buffer (width/height is size of single frame)
+  var frames: int32 = 0
+  let rayGif = loadImageAnim(path, frames) # frames is out param set by func
 
-    result.textures.add(loadTextureFromImage(raylibOwnedImg))
+  # Have to do a bit of wizardry to work with the C pointer arithmetic in Nim
+  let size = rayGif.width * rayGif.height * 4
+  let data = cast[ptr UncheckedArray[uint8]](rayGif.data) # 
+  
+  result.width = rayGif.width
+  result.height = rayGif.height
+  
+  for i in 0..<frames:
+    result.delays.add(rawGif.intervals[i])
+    # Note 1: Nim only lets you use toOpenArray as a function param or return value (can't initialize a variable with it)
+    # Note 2: We have to use a WeakImage so that raylib doesn't try to free it (Nim Image object destructor will invoke 
+    # raylib heap free)
+    # Note 3: I first tried using loadImageFromMemory(), but that seems to be a very niche function. Only use I could 
+    # find of it was in raylib to copy an image from the clipboard (so it's like the raw file buffer in memory, I guess)
+    let rayFrame = toWeakImage(data.toOpenArray(i*size, (i+1)*size - 1), rayGif.width, rayGif.height, UncompressedR8g8b8a8)
+    result.textures.add(loadTextureFromImage(rayFrame.Image))
+    
+proc findGifs*(dirPath: string): seq[string] =
+  # Make sure the directory actually exists first
+  assert(dirExists(dirPath), fmt"Error: Directory does not exist: {dirPath}")
+  
+  # walkDir returns a tuple: (kind, path)
+  for kind, path in walkDir(dirPath):
+    # pcFile ensures we only look at files, ignoring subfolders
+    if kind == pcFile and path.toLowerAscii.endsWith(".gif"):
+      result.add(path)
+      
+    echo result
