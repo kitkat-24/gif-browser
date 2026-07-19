@@ -1,3 +1,6 @@
 nimble.paths
 config.nims
 src/gifbrowser
+nimble.develop
+nimbledeps
+path.txt
