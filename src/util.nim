@@ -2,11 +2,14 @@ import pixie/fileformats/gif
 import raylib
 import std/[assertions, os, strformat, strutils]
 
-type GifAnimation* = object
+type GifAnimation* = ref object
   textures*: seq[Texture2D]
   delays*: seq[float32] # Storing variable frame timings securely
   width*: int32
   height*: int32
+  frameTimer*: float32
+  curFrame*: int
+  frames*: int
 
 proc loadGifAnimation*(path: string): GifAnimation =
   # Have to read GIF with Pixie just to get frame delays bc raylib discard them :/
@@ -20,8 +23,10 @@ proc loadGifAnimation*(path: string): GifAnimation =
   let size = rayGif.width * rayGif.height * 4
   let data = cast[ptr UncheckedArray[uint8]](rayGif.data) # 
   
+  result = GifAnimation()
   result.width = rayGif.width
   result.height = rayGif.height
+  result.frames = frames
   
   for i in 0..<frames:
     result.delays.add(rawGif.intervals[i])
@@ -32,6 +37,21 @@ proc loadGifAnimation*(path: string): GifAnimation =
     # find of it was in raylib to copy an image from the clipboard (so it's like the raw file buffer in memory, I guess)
     let rayFrame = toWeakImage(data.toOpenArray(i*size, (i+1)*size - 1), rayGif.width, rayGif.height, UncompressedR8g8b8a8)
     result.textures.add(loadTextureFromImage(rayFrame.Image))
+
+proc updateFrameData*(anim: GifAnimation, dt: float32) =
+  # 1. Accumulate the time passed since the last game tick
+  anim.frameTimer += dt
+
+  # 2. Get the required delay for the CURRENT frame
+  let currentDelay = anim.delays[anim.curFrame]
+
+  # 3. Check if enough time has passed to advance
+  if anim.frameTimer >= currentDelay:
+    # Deduct the delay time (preserves overflow time for precision)
+    anim.frameTimer -= currentDelay
+    
+    # Move to next frame and wrap around safely using mod
+    anim.curFrame = (anim.curFrame + 1) mod anim.frames
     
 proc findGifs*(dirPath: string): seq[string] =
   # Make sure the directory actually exists first
