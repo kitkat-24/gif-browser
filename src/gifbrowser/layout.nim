@@ -1,11 +1,11 @@
 ## Handling UI layout of textures and such
 import raylib
-import std/[assertions]
+import std/[assertions, math]
 
-type GridLayout* = object
+type ColFlowLayout* = ref object
   pos*: Vector2
-  width*: int
-  height*: int
+  cols*: int
+  nextY: seq[int]
   cellWidth*: int
   cellHeight*: int
   pad*: int
@@ -18,14 +18,22 @@ proc `+`*(a, b: Vector2): Vector2 =
   ## Add Vector2s
   Vector2(x: a.x + b.x, y: a.y + b.y)
 
-func getGridPos*(g: GridLayout, i: int): Vector2 =
-  ## Return position in the grid, fills top->bottom, left->right
-  let cols = g.width div (g.cellWidth + g.pad)
-  assert(cols > 0, "Cannot have grid with 0 columns!")
+proc setupLayout*(c: ColFlowLayout) =
+  ## Initialize the flow layout for this frame
+  c.nextY = newSeq[int](c.cols)
+  for i in 0..<c.cols:
+    c.nextY[i] = c.pad
+
+proc getGridPos*(g: ColFlowLayout, i, width, height: int): (Vector2, float32) =
+  ## Return position in the grid and scale, fills top->bottom, left->right
   let
-    row = i div cols
-    col = i mod cols
+    col = i mod g.cols
+
+  let scale = width / g.cellWidth
+  let finalHeight = round(height.float32 * scale).int
+
   
-  let rel = Vector2(col * (g.cellWidth+g.pad) + g.pad, row * (g.cellHeight+g.pad) + g.pad)
-  result = rel + g.pos
+  let rel = Vector2(col * (g.cellWidth+g.pad) + g.pad, g.nextY[col])
+  g.nextY[col] += finalHeight + g.pad          
+  result = (rel + g.pos, scale)
   

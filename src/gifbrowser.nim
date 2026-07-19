@@ -16,6 +16,16 @@ proc main() =
   var gifs = newSeq[GifAnimation]()
   for file in gifFiles:
     gifs.add(loadGifAnimation(file))
+    
+  let 
+    layout = ColFlowLayout(
+      pos: Vector2(0, 0),
+      cols: 5,
+      cellWidth: 64,
+      cellHeight: 64,
+      pad: 15
+    )
+    rotation = 0.float32
   
   # Main application execution loop
   while not windowShouldClose():
@@ -29,21 +39,10 @@ proc main() =
     clearBackground(Black)
     
     let dt = getFrameTime()
-    
-    let 
-      layout = GridLayout(
-        pos: Vector2(0, 0),
-        width: 800, 
-        height: 600, 
-        cellWidth: 120,
-        cellHeight: 120,
-        pad: 15
-      )
-      rotation = 0.float32
+    setupLayout(layout)
 
     for iGif, gif in gifs:
-      let pos = getGridPos(layout, iGif)
-      let scale = min(layout.cellWidth / gif.width, layout.cellHeight / gif.height)
+      let (pos, scale) = getGridPos(layout, iGif, gif.width, gif.height)
       if pos.y > getScreenHeight().float32:
         break
 
