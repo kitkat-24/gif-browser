@@ -1,6 +1,6 @@
 ## Handling UI layout of textures and such
 import raylib
-import std/[assertions, math, strformat]
+import std/[assertions, math, sequtils, strformat]
 
 type ColFlowLayout* = ref object
   pos*: Vector2
@@ -23,16 +23,20 @@ proc setupLayout*(c: ColFlowLayout) =
   c.nextY = newSeq[int](c.cols)
   for i in 0..<c.cols:
     c.nextY[i] = c.pad
+    
+func findNextCol*(g: ColFlowLayout): int =
+  ## Return next available col with the lowest y value
+  let minY = min(g.nextY)
+  for i, y in g.nextY:
+    if y == minY:
+      return i
 
-proc getGridPos*(g: ColFlowLayout, i, width, height: int): (Vector2, float32) =
+proc getGridPos*(g: ColFlowLayout, width, height: int): (Vector2, float32) =
   ## Return position in the grid and scale, fills top->bottom, left->right
-  let
-    col = i mod g.cols
-
-  let scale = g.cellWidth / width
-  let finalHeight = round(height.float32 * scale).int
-  # echo fmt"{i} ({width} x {height}): scale={scale:.3}, height={finalHeight}"
-
+  let 
+    col = findNextCol(g)
+    scale = g.cellWidth / width
+    finalHeight = round(height.float32 * scale).int
   
   let rel = Vector2(col * (g.cellWidth+g.pad) + g.pad, g.nextY[col])
   g.nextY[col] += finalHeight + g.pad          

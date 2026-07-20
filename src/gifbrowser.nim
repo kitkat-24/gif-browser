@@ -26,6 +26,9 @@ proc main() =
       pad: 15
     )
     rotation = 0.float32
+    scrollSpeed = 100'f32
+  var 
+    curHeight = 0
   
   # Main application execution loop
   while not windowShouldClose():
@@ -33,6 +36,11 @@ proc main() =
     if isKeyPressed(Q):
       takeScreenshot("foo.png")
       break
+    
+    # Handle scroll
+    let mov = getMouseWheelMoveV()
+    curHeight += (mov.y * scrollSpeed).int
+    curHeight = min(max(curHeight, 0), getScreenHeight())
 
     # Frame drawing pipeline
     # --------------------------------------------------------------------------
@@ -42,9 +50,13 @@ proc main() =
     let dt = getFrameTime()
     setupLayout(layout)
 
-    for iGif, gif in gifs:
-      let (pos, scale) = getGridPos(layout, iGif, gif.width, gif.height)
-      if pos.y > getScreenHeight().float32:
+    for gif in gifs:
+      var (pos, scale) = getGridPos(layout, gif.width, gif.height)
+      pos.y -= curHeight.float32
+      if pos.y.int + layout.cellHeight < 0:
+        continue
+      # We draw top->bottom, so once one is off the screen, we're done
+      if pos.y.int > getScreenHeight():
         break
 
       updateFrameData(gif, dt)
