@@ -21,8 +21,8 @@ proc main() =
     layout = ColFlowLayout(
       pos: Vector2(0, 0),
       cols: 5,
-      cellWidth: 64,
-      cellHeight: 64,
+      cellWidth: 120,
+      cellHeight: 120,
       pad: 15
     )
     rotation = 0.float32
@@ -31,6 +31,7 @@ proc main() =
   while not windowShouldClose():
     # For now, close with 'Q'
     if isKeyPressed(Q):
+      takeScreenshot("foo.png")
       break
 
     # Frame drawing pipeline

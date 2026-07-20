@@ -1,6 +1,6 @@
 ## Handling UI layout of textures and such
 import raylib
-import std/[assertions, math]
+import std/[assertions, math, strformat]
 
 type ColFlowLayout* = ref object
   pos*: Vector2
@@ -29,8 +29,9 @@ proc getGridPos*(g: ColFlowLayout, i, width, height: int): (Vector2, float32) =
   let
     col = i mod g.cols
 
-  let scale = width / g.cellWidth
+  let scale = g.cellWidth / width
   let finalHeight = round(height.float32 * scale).int
+  # echo fmt"{i} ({width} x {height}): scale={scale:.3}, height={finalHeight}"
 
   
   let rel = Vector2(col * (g.cellWidth+g.pad) + g.pad, g.nextY[col])
