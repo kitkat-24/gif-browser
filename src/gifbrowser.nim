@@ -1,16 +1,16 @@
 import raylib
-import gifbrowser/[layout, readGif, naylibWrapper]
+import gifbrowser/[layout, naylibWrapper, gif, helpers]
 import std/[strformat]
 import malebolgia
 
 proc main() =
   # Plain window with no native UI titlebar
+  setTraceLogLevel(TraceLogLevel.Error)
   setConfigFlags(flags(WindowUndecorated))
   
-  initWindow(800, 600, "GIF Canvas View")
+  initWindow(690, 690, "GIF Canvas View")
   defer: closeWindow()
   setTargetFPS(60)
-  setTraceLogLevel(TraceLogLevel.Error)
 
   let testFile = readFile("path.txt")
   let gifFiles = findGifs(testFile)
@@ -21,15 +21,17 @@ proc main() =
   
   # Read and resize all gifs in parallel
   var m = createMaster() # Malebolgia master thread
-  var buffers = newSeq[ImBuffer](gifFiles.len)
+  var buffers = newSeq[Gif](gifFiles.len)
   m.awaitAll:
     for i, file in gifFiles:
-      m.spawn readGif(file, tileWidth, tileHeight) -> buffers[i]
-      
+      m.spawn decodeGif(readFile(file)) -> buffers[i]
+  # for i, file in gifFiles:
+  #   buffers[i] = readGif(file)
+
   # Now send GIF frame data to GPU and collect Raylib handles
   var gifs = newSeq[GifAnimation](gifFiles.len)
-  for i, buf in buffers:
-    gifs[i] = loadGifAnimation(buf)
+  for i, gif in buffers:
+    gifs[i] = loadGifAnimation(gif)
     
   let 
     layout = ColFlowLayout(

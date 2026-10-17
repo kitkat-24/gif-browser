@@ -1,5 +1,5 @@
 import raylib
-import readGif
+import gif
 
 
 type GifAnimation* = ref object
@@ -12,23 +12,23 @@ type GifAnimation* = ref object
   frames*: int
 
 
-proc loadGifAnimation*(buf: ImBuffer): GifAnimation =
+proc loadGifAnimation*(rawGif: Gif): GifAnimation =
   # Have to do a bit of wizardry to work with the C pointer arithmetic in Nim
-  let size = buf.width * buf.height * 4
-  let rawData = cast[ptr UncheckedArray[byte]](addr buf.data[0])
-  
   result = GifAnimation()
-  result.width = buf.width
-  result.height = buf.height
-  result.frames = buf.frameDelays.len
-  result.delays = buf.frameDelays
+  result.width  = rawGif.frames[0].width.int32
+  result.height = rawGif.frames[0].height.int32
+  result.frames = rawGif.frames.len
+  result.delays = rawGif.intervals
+
+  let size = result.width * result.height * 4
   
   for i in 0 ..< result.frames:
     # Note 1: Nim only lets you use toOpenArray as a function param or return value (can't initialize a variable with it)
     # Note 2: We have to use a WeakImage so that raylib doesn't try to free it (Nim Image object destructor will invoke 
     # raylib heap free)
-    let rayFrame = toWeakImage(toOpenArray(rawData, i * size, (i+1) * size - 1), 
-                               buf.width, buf.height, UncompressedR8g8b8a8)
+    let rawData = cast[ptr UncheckedArray[byte]](addr rawGif.frames[i].data[0])
+    let rayFrame = toWeakImage(toOpenArray(rawData, 0, size - 1), 
+                               result.width, result.height, UncompressedR8g8b8a8)
     result.textures.add(loadTextureFromImage(rayFrame.Image))
 
 proc updateFrameData*(anim: GifAnimation, dt: float32) =
