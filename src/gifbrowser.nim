@@ -88,15 +88,16 @@ proc main() =
     # maxWidth >= x * (pad + width) + pad
     # x        <= (maxWidth - pad) / (pad + width)
     if (button(Rectangle(x: left, y: layout.pad.float32, width: 85, height: 40), "+ size")):
-      layout.cellWidth  += sizeStep
-      layout.cellHeight += sizeStep
-      layout.cols = (layout.maxWidth - layout.pad) div (layout.pad + layout.cellWidth)
+      if layout.cols > 1:
+        dec layout.cols
+        layout.cellWidth  = (layout.maxWidth - layout.pad * (layout.cols + 1)) div layout.cols
+        layout.cellHeight = layout.cellWidth
       
     if (button(Rectangle(x: left, y: 2*layout.pad.float32 + 40, width: 85, height: 40), "- size")):
-      if not (layout.cellWidth <= sizeStep or layout.cellHeight <= sizeStep): # Don't let 0/negative width happen...
-        layout.cellWidth  -= sizeStep
-        layout.cellHeight -= sizeStep
-        layout.cols = (layout.maxWidth - layout.pad) div (layout.pad + layout.cellWidth)
+      if layout.cols < gifs.len:
+        inc layout.cols
+        layout.cellWidth  = (layout.maxWidth - layout.pad * (layout.cols + 1)) div layout.cols
+        layout.cellHeight = layout.cellWidth
 
     endDrawing()
     # --------------------------------------------------------------------------
