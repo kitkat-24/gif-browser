@@ -6,6 +6,8 @@ type ColFlowLayout* = ref object
   pos*: Vector2
   cols*: int
   nextY: seq[int]
+  maxWidth*: int # max width the layout can occupy (including padding)
+  currHeight*: int # Bottom of longest column at the current size
   cellWidth*: int
   cellHeight*: int
   pad*: int
@@ -30,6 +32,12 @@ func findNextCol*(g: ColFlowLayout): int =
   for i, y in g.nextY:
     if y == minY:
       return i
+      
+func width*(g: ColFlowLayout): int =
+  result = g.cols * g.cellWidth + (g.cols + 1) * g.pad
+      
+func height*(g: ColFlowLayout): int =
+  result = g.nextY.max()
 
 proc getGridPos*(g: ColFlowLayout, width, height: int): (Vector2, float32) =
   ## Return position in the grid and scale, fills top->bottom, left->right

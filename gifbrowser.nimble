@@ -15,3 +15,4 @@ requires "naylib >= 26.08.0"
 requires "pixie >= 6.1.0"
 
 requires "malebolgia >= 0.1.0"
+requires "https://github.com/planetis-m/naygui.git >= 25.25.0"
