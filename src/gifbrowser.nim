@@ -36,7 +36,7 @@ proc main() =
     
   let 
     rotation = 0.float32
-    scrollSpeed = 100'f32
+    scrollSpeed = 200'f32
     sizeStep = 10
   var 
     layout = ColFlowLayout(
@@ -60,7 +60,7 @@ proc main() =
     # Handle scroll
     let mov = getMouseWheelMoveV()
     curHeight += (mov.y * scrollSpeed).int
-    curHeight = min(max(curHeight, 0), getScreenHeight())
+    curHeight = min(max(curHeight, 0), max(layout.currHeight - getScreenHeight(), 0))
 
     # Frame drawing pipeline
     # --------------------------------------------------------------------------
